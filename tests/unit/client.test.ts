@@ -1,6 +1,5 @@
 import { InterClient } from '../../src/inter-client.js';
 import fs from 'fs';
-import path from 'path';
 
 jest.mock('fs');
 jest.mock('axios');

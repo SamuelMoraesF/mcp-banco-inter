@@ -8,6 +8,13 @@ import {
 import { InterClient } from './inter-client.js';
 import fs from 'fs-extra';
 import path from 'path';
+import {
+    CobrancaQueryParams,
+    EmitirCobrancaRequest,
+    GetExtratoParams,
+    GetPdfBoletoParams,
+    CancelarBoletoParams,
+} from './types.js';
 
 export class InterMcpServer {
     private server: Server;
@@ -105,7 +112,6 @@ export class InterMcpServer {
                         required: ['codigoSolicitacao'],
                     },
                 },
-
                 {
                     name: 'cancelar_boleto',
                     description: 'Cancela um boleto de cobrança.',
@@ -141,7 +147,7 @@ export class InterMcpServer {
                         },
                         required: ['dataInicial', 'dataFinal'],
                     },
-                }
+                },
             ],
         }));
 
@@ -149,52 +155,77 @@ export class InterMcpServer {
             try {
                 switch (request.params.name) {
                     case 'consultar_saldo':
-                        return { content: [{ type: 'text', text: JSON.stringify(await this.client.getSaldo(), null, 2) }] };
+                        return {
+                            content: [{ type: 'text', text: JSON.stringify(await this.client.getSaldo(), null, 2) }],
+                        };
 
                     case 'consultar_extrato': {
-                        const { dataInicial, dataFinal } = request.params.arguments as any;
-                        return { content: [{ type: 'text', text: JSON.stringify(await this.client.getExtrato(dataInicial, dataFinal), null, 2) }] };
+                        const args = request.params.arguments as unknown as GetExtratoParams;
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: JSON.stringify(await this.client.getExtrato(args.dataInicial, args.dataFinal), null, 2),
+                                },
+                            ],
+                        };
                     }
 
-                    case 'listar_boletos':
-                        return { content: [{ type: 'text', text: JSON.stringify(await this.client.listCobrancas(request.params.arguments), null, 2) }] };
+                    case 'listar_boletos': {
+                        const args = request.params.arguments as unknown as CobrancaQueryParams;
+                        return {
+                            content: [{ type: 'text', text: JSON.stringify(await this.client.listCobrancas(args), null, 2) }],
+                        };
+                    }
 
-                    case 'emitir_boleto':
-                        return { content: [{ type: 'text', text: JSON.stringify(await this.client.emitirCobranca(request.params.arguments), null, 2) }] };
+                    case 'emitir_boleto': {
+                        const args = request.params.arguments as unknown as EmitirCobrancaRequest;
+                        return {
+                            content: [{ type: 'text', text: JSON.stringify(await this.client.emitirCobranca(args), null, 2) }],
+                        };
+                    }
 
                     case 'baixar_pdf_boleto': {
-                        const { codigoSolicitacao } = request.params.arguments as any;
-                        const pdfBase64 = await this.client.getCobrancaPdf(codigoSolicitacao);
-                        const filePath = path.join(this.storagePath, `boleto_${codigoSolicitacao}.pdf`);
+                        const args = request.params.arguments as unknown as GetPdfBoletoParams;
+                        const pdfBase64 = await this.client.getCobrancaPdf(args.codigoSolicitacao);
+                        const filePath = path.join(this.storagePath, `boleto_${args.codigoSolicitacao}.pdf`);
                         await fs.writeFile(filePath, Buffer.from(pdfBase64, 'base64'));
                         return { content: [{ type: 'text', text: `PDF do boleto salvo em: ${filePath}` }] };
                     }
 
                     case 'baixar_pdf_extrato': {
-                        const { dataInicial, dataFinal } = request.params.arguments as any;
-                        const pdfBuffer = await this.client.getExtratoPdf(dataInicial, dataFinal);
-                        const filePath = path.join(this.storagePath, `extrato_${dataInicial}_${dataFinal}.pdf`);
+                        const args = request.params.arguments as unknown as GetExtratoParams;
+                        const pdfBuffer = await this.client.getExtratoPdf(args.dataInicial, args.dataFinal);
+                        const filePath = path.join(this.storagePath, `extrato_${args.dataInicial}_${args.dataFinal}.pdf`);
                         await fs.writeFile(filePath, pdfBuffer);
                         return { content: [{ type: 'text', text: `PDF do extrato salvo em: ${filePath}` }] };
                     }
 
-
-
                     case 'cancelar_boleto': {
-                        const { codigoSolicitacao, motivo } = request.params.arguments as any;
-                        await this.client.cancelarCobranca(codigoSolicitacao, motivo);
-                        return { content: [{ type: 'text', text: `Boleto ${codigoSolicitacao} cancelado com sucesso.` }] };
+                        const args = request.params.arguments as unknown as CancelarBoletoParams;
+                        await this.client.cancelarCobranca(args.codigoSolicitacao, args.motivo);
+                        return { content: [{ type: 'text', text: `Boleto ${args.codigoSolicitacao} cancelado com sucesso.` }] };
                     }
 
-                    case 'sumario_boletos':
-                        return { content: [{ type: 'text', text: JSON.stringify(await this.client.getSumarioCobrancas(request.params.arguments), null, 2) }] };
+                    case 'sumario_boletos': {
+                        const args = request.params.arguments as unknown as CobrancaQueryParams;
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: JSON.stringify(await this.client.getSumarioCobrancas(args), null, 2),
+                                },
+                            ],
+                        };
+                    }
 
                     default:
                         throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${request.params.name}`);
                 }
-            } catch (error: any) {
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
                 return {
-                    content: [{ type: 'text', text: `Erro: ${error.message}` }],
+                    content: [{ type: 'text', text: `Erro: ${errorMessage}` }],
                     isError: true,
                 };
             }

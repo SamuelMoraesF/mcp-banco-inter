@@ -23,7 +23,9 @@ const {
 } = process.env;
 
 if (!CLIENT_ID || !CLIENT_SECRET || !CERT_PATH || !KEY_PATH) {
-    console.error('As variáveis de ambiente CLIENT_ID, CLIENT_SECRET, CERT_PATH e KEY_PATH são obrigatórias.');
+    console.error(
+        'As variáveis de ambiente CLIENT_ID, CLIENT_SECRET, CERT_PATH e KEY_PATH são obrigatórias.'
+    );
     process.exit(1);
 }
 

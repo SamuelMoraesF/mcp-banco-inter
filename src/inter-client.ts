@@ -1,7 +1,20 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import https from 'https';
 import fs from 'fs';
-import { InterConfig, AuthResponse, SaldoResponse, ExtratoResponse, ListCobrancasResponse } from './types.js';
+import {
+    InterConfig,
+    AuthResponse,
+    SaldoResponse,
+    ExtratoResponse,
+    ListCobrancasResponse,
+    CobrancaQueryParams,
+    EmitirCobrancaRequest,
+    EmitirCobrancaResponse,
+    CobrancaItem,
+    CobrancaPdfResponse,
+    CancelarCobrancaRequest,
+    SumarioCobrancaResponse,
+} from './types.js';
 
 export class InterClient {
     private axiosInstance: AxiosInstance;
@@ -17,7 +30,7 @@ export class InterClient {
         const httpsAgent = new https.Agent({
             cert,
             key,
-            rejectUnauthorized: false, // Often needed for Inter's sandbox/certs in some environments
+            rejectUnauthorized: false,
         });
 
         const baseURL = config.isSandbox
@@ -54,20 +67,21 @@ export class InterClient {
             });
 
             this.token = response.data.access_token;
-            this.tokenExpiresAt = now + (response.data.expires_in - 60) * 1000; // Buffer of 60 seconds
+            this.tokenExpiresAt = now + (response.data.expires_in - 60) * 1000;
             console.log('Successfully authenticated with Inter API');
             return this.token;
-        } catch (error: any) {
-            console.error('AUTHENTICATION ERROR:', error.message);
-            if (error.response) {
-                console.error('Error status:', error.response.status);
-                console.error('Error data:', JSON.stringify(error.response.data, null, 2));
+        } catch (error) {
+            const axiosError = error as AxiosError;
+            console.error('AUTHENTICATION ERROR:', axiosError.message);
+            if (axiosError.response) {
+                console.error('Error status:', axiosError.response.status);
+                console.error('Error data:', JSON.stringify(axiosError.response.data, null, 2));
             }
             throw error;
         }
     }
 
-    private async getHeaders() {
+    private async getHeaders(): Promise<Record<string, string>> {
         const token = await this.authenticate();
         const headers: Record<string, string> = {
             Authorization: `Bearer ${token}`,
@@ -103,7 +117,7 @@ export class InterClient {
         return Buffer.from(response.data);
     }
 
-    async listCobrancas(params: any): Promise<ListCobrancasResponse> {
+    async listCobrancas(params: CobrancaQueryParams): Promise<ListCobrancasResponse> {
         const headers = await this.getHeaders();
         const response = await this.axiosInstance.get<ListCobrancasResponse>('/cobranca/v3/cobrancas', {
             headers,
@@ -112,42 +126,41 @@ export class InterClient {
         return response.data;
     }
 
-    async emitirCobranca(data: any): Promise<{ codigoSolicitacao: string }> {
+    async emitirCobranca(data: EmitirCobrancaRequest): Promise<EmitirCobrancaResponse> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.post('/cobranca/v3/cobrancas', data, { headers });
+        const response = await this.axiosInstance.post<EmitirCobrancaResponse>('/cobranca/v3/cobrancas', data, { headers });
         return response.data;
     }
 
-    async getCobranca(codigoSolicitacao: string): Promise<any> {
+    async getCobranca(codigoSolicitacao: string): Promise<CobrancaItem> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.get(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, { headers });
+        const response = await this.axiosInstance.get<CobrancaItem>(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, { headers });
         return response.data;
     }
 
     async getCobrancaPdf(codigoSolicitacao: string): Promise<string> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.get(`/cobranca/v3/cobrancas/${codigoSolicitacao}/pdf`, { headers });
+        const response = await this.axiosInstance.get<CobrancaPdfResponse>(`/cobranca/v3/cobrancas/${codigoSolicitacao}/pdf`, { headers });
         return response.data.pdf;
     }
 
     async cancelarCobranca(codigoSolicitacao: string, motivo: string): Promise<void> {
         const headers = await this.getHeaders();
-        await this.axiosInstance.post(`/cobranca/v3/cobrancas/${codigoSolicitacao}/cancelar`, { motivoCancelamento: motivo }, { headers });
+        const body: CancelarCobrancaRequest = { motivoCancelamento: motivo };
+        await this.axiosInstance.post(`/cobranca/v3/cobrancas/${codigoSolicitacao}/cancelar`, body, { headers });
     }
 
-    async editarCobranca(codigoSolicitacao: string, data: any): Promise<any> {
+    async editarCobranca(codigoSolicitacao: string, data: Partial<EmitirCobrancaRequest>): Promise<void> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.patch(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, data, { headers });
-        return response.data;
+        await this.axiosInstance.patch(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, data, { headers });
     }
 
-    async getSumarioCobrancas(params: any): Promise<any[]> {
+    async getSumarioCobrancas(params: CobrancaQueryParams): Promise<SumarioCobrancaResponse> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.get('/cobranca/v3/cobrancas/sumario', {
+        const response = await this.axiosInstance.get<SumarioCobrancaResponse>('/cobranca/v3/cobrancas/sumario', {
             headers,
             params,
         });
         return response.data;
     }
-
 }

@@ -1,6 +1,9 @@
+import { jest, describe, it, expect, beforeAll } from '@jest/globals';
 import { InterClient } from '../../src/inter-client.js';
 import dotenv from 'dotenv';
 import path from 'path';
+import { AxiosError } from 'axios';
+import { InterConfig } from '../../src/types.js';
 
 dotenv.config();
 
@@ -14,20 +17,26 @@ describe('InterClient Integration (Read Operations)', () => {
             hasId: !!process.env.INTER_CLIENT_ID,
             hasSecret: !!process.env.INTER_CLIENT_SECRET,
             hasCert: !!process.env.INTER_CERT,
-            hasKey: !!process.env.INTER_KEY
+            hasKey: !!process.env.INTER_KEY,
         });
-        const config = {
-            clientId: process.env.INTER_CLIENT_ID || '',
-            clientSecret: process.env.INTER_CLIENT_SECRET || '',
-            certPath: path.resolve(process.env.INTER_KEY || ''),
-            keyPath: path.resolve(process.env.INTER_CERT || ''),
+
+        const clientId = process.env.INTER_CLIENT_ID || '';
+        const clientSecret = process.env.INTER_CLIENT_SECRET || '';
+        const certPath = process.env.INTER_CERT || '';
+        const keyPath = process.env.INTER_KEY || '';
+
+        if (!clientId || !clientSecret || !certPath || !keyPath) {
+            throw new Error('Missing environment variables for integration tests');
+        }
+
+        const config: InterConfig = {
+            clientId,
+            clientSecret,
+            certPath: path.resolve(certPath),
+            keyPath: path.resolve(keyPath),
             contaCorrente: process.env.X_CONTA_CORRENTE,
             isSandbox: process.env.INTER_IS_SANDBOX === 'true',
         };
-
-        if (!config.clientId || !config.clientSecret || !config.certPath || !config.keyPath) {
-            throw new Error('Missing environment variables for integration tests');
-        }
 
         client = new InterClient(config);
     });
@@ -38,10 +47,11 @@ describe('InterClient Integration (Read Operations)', () => {
             console.log('Saldo:', saldo);
             expect(saldo).toBeDefined();
             expect(saldo.disponivel).toBeDefined();
-        } catch (e: any) {
-            console.error('FAILED TO GET SALDO:', e.message);
-            if (e.response) console.error('Error response:', e.response.data);
-            throw e;
+        } catch (e) {
+            const error = e as AxiosError;
+            console.error('FAILED TO GET SALDO:', error.message);
+            if (error.response) console.error('Error response:', error.response.data);
+            throw error;
         }
     });
 
@@ -93,31 +103,17 @@ describe('InterClient Integration (Read Operations)', () => {
         });
 
         if (cobrancas.cobrancas && cobrancas.cobrancas.length > 0) {
-            // console.log('Cobranca Object:', JSON.stringify(cobrancas.cobrancas[0], null, 2));
             const codigoSolicitacao = cobrancas.cobrancas[0].cobranca.codigoSolicitacao;
             console.log('Testing with Cobranca Code:', codigoSolicitacao);
 
             // Test getCobranca
             const cobrancaDetails = await client.getCobranca(codigoSolicitacao);
             expect(cobrancaDetails).toBeDefined();
-            // The getCobranca likely returns the same structure or a detailed one, 
-            // checking if the returned object has the correct code.
-            // Based on API docs, it returns the detailing, which might have 'cobranca' key too 
-            // OR checks nested property. Let's check if the high level object has it or nested.
-            // For safety, let's just check if it's defined and convert to any to check property
-            const details: any = cobrancaDetails;
-            // The API for GET /cobrancas/{id} returns the same structure as the item in the list mostly, 
-            // or maybe flattened? The key is usually valid.
-            // Let's assume it returns { cobranca: { ... }, ... } or just { ... }
-
-            // For now, let's just expect it to be defined.
-            expect(details).toBeDefined();
-
+            expect(cobrancaDetails.cobranca.codigoSolicitacao).toEqual(codigoSolicitacao);
 
             // Test getCobrancaPdf
             const pdf = await client.getCobrancaPdf(codigoSolicitacao);
             expect(pdf).toBeDefined();
-            // PDF comes as base64 string or similar depending on implementation, checking if it's truthy
             expect(pdf.length).toBeGreaterThan(0);
         } else {
             console.warn('No cobrancas found to test getCobranca/getCobrancaPdf');
