@@ -1,0 +1,131 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.SamuelMoraesF/mcp-banco-inter",
+  "description": "Servidor MCP (Model Context Protocol) para integração com a API do Banco Inter Empresas (PJ). Permite consultar saldos, extratos e gerenciar cobranças via assistentes de IA.",
+  "repository": {
+    "url": "https://github.com/SamuelMoraesF/mcp-banco-inter",
+    "source": "github"
+  },
+  "version": "1.0.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "mcp-banco-inter",
+      "version": "1.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "CLIENT_ID",
+          "description": "ID do cliente obtido no Portal do Desenvolvedor Inter",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "CLIENT_SECRET",
+          "description": "Secret do cliente obtido no Portal do Desenvolvedor Inter",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "CERT_PATH",
+          "description": "Caminho absoluto para o arquivo de certificado (.crt)",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "KEY_PATH",
+          "description": "Caminho absoluto para o arquivo de chave privada (.key)",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "X_CONTA_CORRENTE",
+          "description": "Número da conta corrente",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "STORAGE_PATH",
+          "description": "Caminho para salvamento dos PDFs",
+          "isRequired": false,
+          "default": "./storage",
+          "format": "string"
+        },
+        {
+          "name": "INTER_IS_SANDBOX",
+          "description": "Habilitar modo sandbox",
+          "isRequired": false,
+          "default": "false",
+          "format": "boolean"
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "samuelmoraesf/mcp-banco-inter:v1.0.1",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://{MCP_HOST}:{MCP_PORT}/mcp"
+      },
+      "environmentVariables": [
+        {
+          "name": "CLIENT_ID",
+          "description": "ID do cliente obtido no Portal do Desenvolvedor Inter",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "CLIENT_SECRET",
+          "description": "Secret do cliente obtido no Portal do Desenvolvedor Inter",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "CERT_PATH",
+          "description": "Caminho para o certificado dentro do container (ex: /app/certs/inter.crt)",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "KEY_PATH",
+          "description": "Caminho para a chave dentro do container (ex: /app/certs/inter.key)",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "X_CONTA_CORRENTE",
+          "description": "Número da conta corrente",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "MCP_PORT",
+          "description": "Porta do servidor HTTP",
+          "isRequired": false,
+          "default": "3000",
+          "format": "number"
+        },
+        {
+          "name": "MCP_HOST",
+          "description": "Host do servidor HTTP",
+          "isRequired": false,
+          "default": "0.0.0.0",
+          "format": "string"
+        },
+        {
+          "name": "INTER_IS_SANDBOX",
+          "description": "Habilitar modo sandbox",
+          "isRequired": false,
+          "default": "false",
+          "format": "boolean"
+        }
+      ]
+    }
+  ]
+}
