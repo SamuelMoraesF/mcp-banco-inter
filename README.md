@@ -57,10 +57,10 @@ X_CONTA_CORRENTE=123456789
 # Armazenamento local (PDFs gerados)
 STORAGE_PATH=./storage
 
-# Transporte MCP: "stdio" | "streamable-http" | "sse"
+# Transporte MCP: "stdio" | "streamable-http"
 MCP_TRANSPORT=stdio
 
-# Configurações de rede (apenas para transporte HTTP/SSE)
+# Configurações de rede (apenas para transporte streamable-http)
 MCP_HOST=0.0.0.0
 MCP_PORT=3000
 
@@ -79,7 +79,7 @@ O servidor suporta dois modos de transporte:
 | Transporte | Uso | Ideal para |
 |---|---|---|
 | **`stdio`** | Comunicação via stdin/stdout | Clientes locais (Claude Desktop, Cursor, etc.) |
-| **`streamable-http`** | Servidor HTTP com endpoint SSE | Clientes remotos, Docker, múltiplos clientes |
+| **`streamable-http`** | Servidor HTTP com Streamable HTTP | Clientes remotos, Docker, múltiplos clientes |
 
 ---
 
@@ -120,7 +120,7 @@ npx -y samuelmoraesf/mcp-banco-inter
 
 O servidor estará disponível em:
 ```
-http://localhost:3000/sse
+http://localhost:3000/mcp
 ```
 
 ---
@@ -158,7 +158,7 @@ docker run -d \
   samuelmoraesf/mcp-banco-inter:latest
 ```
 
-> O container expõe o endpoint SSE em `http://localhost:3000/sse`.
+> O container expõe o endpoint Streamable HTTP em `http://localhost:3000/mcp`.
 
 ---
 
@@ -229,7 +229,7 @@ Na configuração MCP do seu editor, adicione:
 Para clientes que se conectam via HTTP (incluindo Docker), primeiro inicie o servidor em modo `streamable-http` (veja seções 2️⃣ ou 3️⃣ acima) e configure o cliente para conectar ao endpoint:
 
 ```
-http://localhost:3000/sse
+http://localhost:3000/mcp
 ```
 
 ---
@@ -261,7 +261,7 @@ src/
 
 | Módulo | Responsabilidade |
 |---|---|
-| **`index.ts`** | Carrega variáveis de ambiente, inicializa o `InterClient` e o `InterMcpServer`, e configura o transporte (`stdio` ou `SSE/HTTP`). |
+| **`index.ts`** | Carrega variáveis de ambiente, inicializa o `InterClient` e o `InterMcpServer`, e configura o transporte (`stdio` ou `Streamable HTTP`). |
 | **`server.ts`** | Registra as ferramentas MCP e delega chamadas ao `InterClient`. |
 | **`inter-client.ts`** | Autenticação OAuth2 com mTLS, cache de token, e todas as chamadas REST à API Inter (Banking v2 e Cobrança v3). |
 | **`types.ts`** | Tipagem completa de todas as interfaces usadas nas requisições e respostas da API. |
