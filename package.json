@@ -1,9 +1,18 @@
 {
   "name": "mcp-banco-inter",
   "version": "1.0.0",
-  "description": "",
+  "description": "Servidor MCP (Model Context Protocol) para integração com a API do Banco Inter Empresas (PJ). Permite consultar saldos, extratos e gerenciar cobranças via assistentes de IA.",
   "main": "dist/index.js",
   "type": "module",
+  "mcpName": "io.github.SamuelMoraesF/mcp-banco-inter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamuelMoraesF/mcp-banco-inter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SamuelMoraesF/mcp-banco-inter/issues"
+  },
+  "homepage": "https://github.com/SamuelMoraesF/mcp-banco-inter#readme",
   "bin": {
     "mcp-banco-inter": "./dist/index.js"
   },
@@ -13,7 +22,8 @@
     "dev": "nodemon --watch src --ext ts --exec \"node --loader ts-node/esm\" src/index.ts",
     "test": "jest",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "prepare": "npm run build"
   },
   "keywords": [],
   "author": "",

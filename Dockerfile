@@ -9,6 +9,7 @@ COPY . .
 RUN npm run build
 
 FROM node:20-slim
+LABEL io.modelcontextprotocol.server.name="io.github.SamuelMoraesF/mcp-banco-inter"
 
 WORKDIR /app
 
