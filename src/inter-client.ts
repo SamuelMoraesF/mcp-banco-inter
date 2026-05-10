@@ -30,7 +30,6 @@ export class InterClient {
         const httpsAgent = new https.Agent({
             cert,
             key,
-            rejectUnauthorized: false,
         });
 
         const baseURL = config.isSandbox
@@ -42,7 +41,7 @@ export class InterClient {
             httpsAgent,
             timeout: 30000,
         });
-        console.log(`InterClient initialized with baseURL: ${baseURL}`);
+        console.error(`InterClient initialized with baseURL: ${baseURL}`);
     }
 
     private async authenticate(): Promise<string> {
@@ -58,7 +57,7 @@ export class InterClient {
             scope: 'boleto-cobranca.read boleto-cobranca.write extrato.read saldo.read',
         });
 
-        console.log('Authenticating with Inter API...');
+        console.error('Authenticating with Inter API...');
         try {
             const response = await this.axiosInstance.post<AuthResponse>('/oauth/v2/token', data.toString(), {
                 headers: {
@@ -68,7 +67,7 @@ export class InterClient {
 
             this.token = response.data.access_token;
             this.tokenExpiresAt = now + (response.data.expires_in - 60) * 1000;
-            console.log('Successfully authenticated with Inter API');
+            console.error('Successfully authenticated with Inter API');
             return this.token;
         } catch (error) {
             const axiosError = error as AxiosError;
@@ -134,25 +133,25 @@ export class InterClient {
 
     async getCobranca(codigoSolicitacao: string): Promise<CobrancaItem> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.get<CobrancaItem>(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, { headers });
+        const response = await this.axiosInstance.get<CobrancaItem>(`/cobranca/v3/cobrancas/${encodeURIComponent(codigoSolicitacao)}`, { headers });
         return response.data;
     }
 
     async getCobrancaPdf(codigoSolicitacao: string): Promise<string> {
         const headers = await this.getHeaders();
-        const response = await this.axiosInstance.get<CobrancaPdfResponse>(`/cobranca/v3/cobrancas/${codigoSolicitacao}/pdf`, { headers });
+        const response = await this.axiosInstance.get<CobrancaPdfResponse>(`/cobranca/v3/cobrancas/${encodeURIComponent(codigoSolicitacao)}/pdf`, { headers });
         return response.data.pdf;
     }
 
     async cancelarCobranca(codigoSolicitacao: string, motivo: string): Promise<void> {
         const headers = await this.getHeaders();
         const body: CancelarCobrancaRequest = { motivoCancelamento: motivo };
-        await this.axiosInstance.post(`/cobranca/v3/cobrancas/${codigoSolicitacao}/cancelar`, body, { headers });
+        await this.axiosInstance.post(`/cobranca/v3/cobrancas/${encodeURIComponent(codigoSolicitacao)}/cancelar`, body, { headers });
     }
 
     async editarCobranca(codigoSolicitacao: string, data: Partial<EmitirCobrancaRequest>): Promise<void> {
         const headers = await this.getHeaders();
-        await this.axiosInstance.patch(`/cobranca/v3/cobrancas/${codigoSolicitacao}`, data, { headers });
+        await this.axiosInstance.patch(`/cobranca/v3/cobrancas/${encodeURIComponent(codigoSolicitacao)}`, data, { headers });
     }
 
     async getSumarioCobrancas(params: CobrancaQueryParams): Promise<SumarioCobrancaResponse> {

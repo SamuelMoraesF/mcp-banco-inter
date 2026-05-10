@@ -187,22 +187,34 @@ export class InterMcpServer {
 
                     case 'baixar_pdf_boleto': {
                         const args = request.params.arguments as unknown as GetPdfBoletoParams;
-                        const pdfBase64 = await this.client.getCobrancaPdf(args.codigoSolicitacao);
-                        const filePath = path.join(this.storagePath, `boleto_${args.codigoSolicitacao}.pdf`);
+                        const codigoSolicitacao = path.basename(args.codigoSolicitacao);
+                        if (!/^[A-Za-z0-9_-]+$/.test(codigoSolicitacao)) {
+                            throw new McpError(ErrorCode.InvalidParams, 'codigoSolicitacao inválido');
+                        }
+                        const pdfBase64 = await this.client.getCobrancaPdf(codigoSolicitacao);
+                        const filePath = path.join(this.storagePath, `boleto_${codigoSolicitacao}.pdf`);
                         await fs.writeFile(filePath, Buffer.from(pdfBase64, 'base64'));
                         return { content: [{ type: 'text', text: `PDF do boleto salvo em: ${filePath}` }] };
                     }
 
                     case 'baixar_pdf_extrato': {
                         const args = request.params.arguments as unknown as GetExtratoParams;
-                        const pdfBuffer = await this.client.getExtratoPdf(args.dataInicial, args.dataFinal);
-                        const filePath = path.join(this.storagePath, `extrato_${args.dataInicial}_${args.dataFinal}.pdf`);
+                        const dataInicial = path.basename(args.dataInicial);
+                        const dataFinal = path.basename(args.dataFinal);
+                        if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicial) || !/^\d{4}-\d{2}-\d{2}$/.test(dataFinal)) {
+                            throw new McpError(ErrorCode.InvalidParams, 'dataInicial ou dataFinal inválida');
+                        }
+                        const pdfBuffer = await this.client.getExtratoPdf(dataInicial, dataFinal);
+                        const filePath = path.join(this.storagePath, `extrato_${dataInicial}_${dataFinal}.pdf`);
                         await fs.writeFile(filePath, pdfBuffer);
                         return { content: [{ type: 'text', text: `PDF do extrato salvo em: ${filePath}` }] };
                     }
 
                     case 'cancelar_boleto': {
                         const args = request.params.arguments as unknown as CancelarBoletoParams;
+                        if (!/^[A-Za-z0-9_-]+$/.test(args.codigoSolicitacao)) {
+                            throw new McpError(ErrorCode.InvalidParams, 'codigoSolicitacao inválido');
+                        }
                         await this.client.cancelarCobranca(args.codigoSolicitacao, args.motivo);
                         return { content: [{ type: 'text', text: `Boleto ${args.codigoSolicitacao} cancelado com sucesso.` }] };
                     }
